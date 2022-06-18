@@ -10,28 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import wave from '../../assets/wave.png';
 import { AntDesign } from '@expo/vector-icons';
-import { Entypo } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { Slider } from '@miblanchard/react-native-slider';
 import Button from '../components/Button';
 import buttonData from '../mapping/buttonData';
+import { setAudioModeAsync } from 'expo-av/build/Audio';
 
 const Home = () => {
-    const [isPlaying, setIsPlaying] = React.useState(false);
-    const [playbackObject, setPlaybackObject] = React.useState<number | null>(
-        null
-    );
-    const [playbackStatus, setPlaybackStatus] = React.useState<boolean | null>(
-        null
-    );
-
-    const [currentAudio, setCurrentAudio] = React.useState(null);
-    const [audioName, setAudioName] = React.useState('');
-
-    const [value, setValue] = React.useState(1);
-
-    //Sound Downloading Function Starts
     const soundtracksdir = FileSystem.cacheDirectory + 'soundtracks/';
     const SoundTrackFileUri = (SoundTrackId) =>
         soundtracksdir + `track_${SoundTrackId}.mp3`;
@@ -50,7 +36,7 @@ const Home = () => {
         {
             filename: 'Not Awesome at all audio',
             id: 'cloud',
-            uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+            uri: 'ihttps://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
         },
         {
             filename: 'Dont know anymore Audio',
@@ -73,12 +59,8 @@ const Home = () => {
 
         const fileUri = SoundTrackFileUri(audio.id);
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
-
         console.log('FILE INFO ', fileInfo);
 
-        if (!!fileInfo) {
-            setAudioName(audio.filename);
-        }
         if (!fileInfo.exists) {
             console.log("SoundTrack isn't cached locally. Downloading...");
             await FileSystem.downloadAsync(audio.uri, fileUri);
@@ -86,6 +68,17 @@ const Home = () => {
 
         return fileUri;
     }
+    //Sound Downloading Function ends
+    const [isPlaying, setIsPlaying] = React.useState(false);
+    const [playbackObject, setPlaybackObject] = React.useState<number | null>(
+        null
+    );
+    const [playbackStatus, setPlaybackStatus] = React.useState<boolean | null>(
+        null
+    );
+    const [currentAudio, setCurrentAudio] = React.useState(null);
+
+    const [value, setValue] = React.useState(1);
 
     function change(value) {
         setValue(value);
@@ -105,7 +98,6 @@ const Home = () => {
     }
 
     async function changeVolume(value) {
-        // console.log('changing value to ', value)
         await playbackObject.setVolumeAsync(value);
     }
 
@@ -113,29 +105,30 @@ const Home = () => {
         if (playbackObject === null) {
             setPlaybackObject(new Audio.Sound());
         }
-    }, []);
-    const handleAudioPlayPause = async (audio) => {
-        if (currentAudio !== audio.id) {
-            await playbackObject.unloadAsync();
-            const FileURI = await getSingleSoundTrack(audio);
-            const status = await playbackObject.loadAsync(
-                { uri: FileURI },
-                { shouldPlay: true }
-            );
-            setIsPlaying(true);
-            setCurrentAudio(audio.id);
-            setAudioName(audio.filename);
-            return setPlaybackStatus(status);
+    }, [playbackObject]);
+
+    const tempRef = React.useRef();
+
+    React.useEffect(() => {
+        if (tempRef.current && currentAudio) {
+            handleAudioPlayPause();
+        } else {
+            tempRef.current = true;
         }
+    }, [currentAudio]);
+
+    const onButtonPress = (audio) => {
+        setCurrentAudio(audio);
+    };
+    const handleAudioPlayPause = async () => {
         // initial loading
         if (playbackObject !== null && playbackStatus === null) {
-            const FileURI = await getSingleSoundTrack(audio);
+            const FileURI = await getSingleSoundTrack(currentAudio);
             const status = await playbackObject.loadAsync(
                 { uri: FileURI },
                 { shouldPlay: true }
             );
             setIsPlaying(true);
-            setCurrentAudio(audio.id);
             return setPlaybackStatus(status);
         }
 
@@ -153,34 +146,36 @@ const Home = () => {
             return setPlaybackStatus(status);
         }
     };
-
+    console.log(currentAudio);
     return (
         <SafeAreaView style={styles.containers}>
             <View style={styles.top}>
                 <TouchableOpacity>
                     <AntDesign name="closesquareo" size={30} color="white" />
                 </TouchableOpacity>
+                <ActivityIndicator size="large" color="#fff" />
                 <Text
                     style={{ color: 'white', fontSize: 18, fontFamily: 'Reg' }}
                 >
                     Instruction
                 </Text>
             </View>
+            {isPlaying && <Text>{currentAudio.filename}</Text>}
+
             <View style={styles.mid}>
                 <Image
                     source={wave}
                     style={{ width: '100%', alignSelf: 'center' }}
                 />
             </View>
+
             <View style={styles.bCon}>
                 <View style={styles.bottom}>
                     {buttonData.map((e) => {
                         return (
                             <Button
                                 onPress={() =>
-                                    handleAudioPlayPause(
-                                        audio[e.num.toString()]
-                                    )
+                                    onButtonPress(audio[e.num.toString()])
                                 }
                                 name={e.name}
                                 key={e.num.toString()}
@@ -188,41 +183,7 @@ const Home = () => {
                         );
                     })}
                 </View>
-
                 <View style={styles.sCon}>
-                    {/* {isDownloading && (
-                        <View
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                                alignItems: 'center'
-                            }}
-                        >
-                            <ActivityIndicator size="large" color="#00ff00" />
-                            <Text
-                                style={{
-                                    color: 'white',
-                                    fontSize: 18,
-                                    fontFamily: 'Reg',
-                                    marginLeft: 10
-                                }}
-                            >
-                                Your song is being downloading.
-                            </Text>
-                        </View>
-                    )} */}
-                    {isPlaying && (
-                        <Text
-                            style={{
-                                color: 'white',
-                                fontSize: 18,
-                                fontFamily: 'Reg'
-                            }}
-                        >
-                            {audioName}
-                        </Text>
-                    )}
-
                     <Slider
                         value={value}
                         onValueChange={(value) => change(value)}
@@ -254,6 +215,8 @@ const styles = StyleSheet.create({
     },
     bottom: {
         display: 'flex',
+        // paddingBottom: 100,
+        // flexWrap: 'wrap',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-around',
