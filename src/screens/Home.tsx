@@ -190,27 +190,6 @@ const Home = () => {
                 </View>
 
                 <View style={styles.sCon}>
-                    {/* {isDownloading && (
-                        <View
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                                alignItems: 'center'
-                            }}
-                        >
-                            <ActivityIndicator size="large" color="#00ff00" />
-                            <Text
-                                style={{
-                                    color: 'white',
-                                    fontSize: 18,
-                                    fontFamily: 'Reg',
-                                    marginLeft: 10
-                                }}
-                            >
-                                Your song is being downloading.
-                            </Text>
-                        </View>
-                    )} */}
                     {isPlaying && (
                         <Text
                             style={{
