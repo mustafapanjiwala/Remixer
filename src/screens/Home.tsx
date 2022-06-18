@@ -29,6 +29,8 @@ const Home = () => {
     const [currentAudio, setCurrentAudio] = React.useState(null);
     const [audioName, setAudioName] = React.useState('');
 
+    const [isDownloading, setIsDownloading] = React.useState(false);
+
     const [value, setValue] = React.useState(1);
 
     //Sound Downloading Function Starts
@@ -81,8 +83,10 @@ const Home = () => {
         }
         if (!fileInfo.exists) {
             console.log("SoundTrack isn't cached locally. Downloading...");
+            setIsDownloading(true);
             await FileSystem.downloadAsync(audio.uri, fileUri);
         }
+        setIsDownloading(false);
 
         return fileUri;
     }
@@ -190,6 +194,25 @@ const Home = () => {
                 </View>
 
                 <View style={styles.sCon}>
+                    {isDownloading && (
+                        <View style={styles.loader}>
+                            <ActivityIndicator
+                                size="large"
+                                color="#000"
+                                animating={isDownloading}
+                            />
+                            <Text
+                                style={{
+                                    color: 'white',
+                                    fontSize: 18,
+                                    fontFamily: 'Reg',
+                                    marginLeft: 5
+                                }}
+                            >
+                                Your song is downloading...
+                            </Text>
+                        </View>
+                    )}
                     {isPlaying && (
                         <Text
                             style={{
@@ -220,6 +243,11 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'column',
         justifyContent: 'space-between'
+    },
+    loader: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center'
     },
     top: {
         display: 'flex',
